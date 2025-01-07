@@ -1,0 +1,85 @@
+<html>
+    <head>
+    <title>File manager</title>
+    </head>
+    <body>
+    <div align="center">
+        <h1>Local file system</h1>
+        <p><strong>CWD: </strong>{{ current_working_directory }}</p>
+        <form action = "/search_videos" method = "POST"> 
+            <label for="tag_name">Search tag:</label>  
+            <input type="text" id="tag_name" name="tag_name" />   
+            <input type = "submit" value="Search">   
+        </form>  
+        {% if search_term != 'Nothing' and search_term != None %}
+            <p>Videos that have: {{search_term}}</p>
+        {% else %}
+            <p></p>
+        {% endif%}
+        <form action = "/videos"> 
+            <input type = "submit" value="Clear search">   
+        </form>
+    </div>
+    <nav>
+        <a href="/">Home</a>
+    </nav>
+    <hr>
+    
+    
+    <ul>
+        <!-- <form action="/md">
+        <input type="submit" value="New folder"/>
+        <input name="folder" type="text" value="new_folder"/>
+        </form> -->
+        <!-- <hr> -->
+        <li><a href="/cd?path=..">..</a></li>
+        <hr>
+        {% for item in render_data %}
+        <!-- item[0] = file name
+            item[1] = thumbnail img name
+            item[2] = descriptive tags  -->
+        {% if '.' not in item[0]%}
+            <li>   
+                <a href="/cd?path={{current_working_directory + '/static/media/' + item}}"> 
+                    <img src=".\temp\{{item}}.png" style="width:42px;height:42px;">{{item}}
+                </a>
+            </li>
+        {% elif '.txt' in item[0] or '.py' in item or '.json' in item %}
+            <li><strong><a href="/view?file={{current_working_directory + '/static/media/' + item}}">{{item}}</a></strong></li>
+
+
+        {% elif '.mp4' in item[0] or '.avi' in item[0] %}
+            <li>
+                <a href="/videos?video_to_play={{'.\\static\\media\\' + item[0]}}">
+                    <img src="{{ './static/temp/'  + item[1] }}" style="width:42px; height:42px;">
+                    {{item[0]}}  
+                </a>
+                <br>  
+                <p>tags: 
+                {% for tag in item[2] %}
+                    {{tag}},
+                {% endfor %} </p>
+                <p>Delete file <a href="/rm_vid?name={{'.\\static\\media\\' + item[0]}}"> X </a></p>
+                
+            </li>
+
+
+        {% else %}
+            <li>{{item}}</li>
+        {% endif%}
+        {% endfor %}
+    </ul>
+
+    {% if vid_url != 'Nothing' and vid_url != None%}
+        <video controls="controls" preload="preload" style="width:426px; height:240px;" autoplay="autoplay">
+            <source src="{{ vid_url }}" type="video/mp4"></source>
+        </video>
+    {% else %}
+        <div  style="width:426px; height:240px; background-color: #807e7e">
+            <p>No video selected</p>
+        </div>
+    {% endif%}
+
+
+    </body>
+</html>
