@@ -7,6 +7,9 @@ Disclaimer: NO AI of any kind was used during any stage of this project. This is
   
 Links: [Link Text](URL)
 
+Temp link to repo:  
+https://github.com/Janko-360/Final-project-intelligent-camera-surveillance 
+
 For a deep dive into the research, design and development, please view the report in PDF. 
 
   
