@@ -1,33 +1,165 @@
 # Lots of help from https://flask.palletsprojects.com/en/stable/patterns/fileuploads/
 # API functionality: https://medium.com/@muhammadirfan92/creating-and-deploying-a-simple-flask-api-server-and-client-side-7d4f5690551 
 # File explorer from https://github.com/maksimKorzh/flask-tutorials/blob/master/simple-file-manager/app.py  
+# Video stream from https://stackoverflow.com/questions/72522805/stream-opencv-video-capture-to-flask-server
 
-from flask import Flask, flash, request, redirect, url_for, render_template 
-from flask_socketio import SocketIO
+
+from flask import Flask, flash, request, redirect, url_for, render_template, Response, make_response, jsonify
 import os 
-import subprocess
 import shutil
-import json
+from static.helpers.video_data_helpers import *
+from flask_apscheduler import APScheduler
+import time
 
+# a dictionary of cameras. Key = IP addresses of cameras, Value = Dict of cam commands or settings 
+# Reset to default data structure per cam with the clean_cam_data() function 
+cams_list = {}
+
+
+ip_addr = '192.168.235.107' # Use this address to have it hosted on local network NOT JUST ON LOCAL MACHINE 
 
 app = Flask(__name__) 
+
+# Camera streaming frame 
+frame = None
+# Similar to a stream state. False with no stream, if it has a value, it will be the camera address/id
+stream_cam = False
+# Used to bridge the small delay between the camera starting to send the stream and when the website registers it has a video to work with 
+# The website (cam_stream.html) has to refresh until the stream stars 
+cam_selected = False
 
 
 @app.route('/')
 def main():   
+    end_stream()
     return render_template("index.html")   
-# @app.route('/videos', methods = ['GET'])
+
 
 @app.route('/try')
 def try_run():
-    metadata = get_file_metadata('.\\static\\media\\vid 1.mp4')
-    tags = metadata['format']['tags']['comment'].split(', ')
-    print(tags)
-
     return render_template('try.html')
 
+@app.route('/stream', methods=['PUT'])
+def upload():
+    '''Camera send the images that make the video to this endpoint\n
+    stream_cam is updated to indicate that a camera is streaming'''
+    global frame
+    global stream_cam
+
+    # keep jpg data in global variable
+    frame = request.data
+    stream_cam = request.remote_addr
+    return "OK"
+
+@app.route('/cam_video')
+def video():
+    '''This is the resource the browser asks to get the video stream from. \n
+    Build into HTML like so: <img src="/video">'''
+    if frame:
+        # if you use `boundary=other_name` then you have to yield `b--other_name\r\n`
+        return Response(video_gen(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    else:
+        return ""
+
+@app.route('/get_cam_commands', methods=['GET'])
+def listen():
+    '''Periodically gets pinged by the cameras to ask for new commands or settings
+    This is also used to update the sign of file of the cameras'''
+    cam_id = request.remote_addr
+
+    print(f'\nCam check in:  {cam_id}')
+    add_cams_list(cam_id)
+
+
+    try: 
+        # NB str is needed to cheat the shadow copy of the dict data
+        # otherwise the data reference will be lost with the overwrite here after 
+        ret_data = str(cams_list[cam_id])
+
+        # Reset camera commands after the current have been send to the camera 
+        if cams_list[cam_id]['command'] != 'idle': 
+            cams_list[cam_id] = clean_cam_data()
+    except: 
+        ret_data = 'Error...'
+        print('>>>>> ERROR cam address not found in cam dict')
+
+
+
+    return ret_data
+
+
+@app.route('/cam_register', methods=['GET'])
+def cam_register():
+    '''Every cam FIRST calls this to register and get added to the "cams_list"'''
+    cam_res = add_cams_list(request.remote_addr)
+    if cam_res == 'good addition': 
+        return 'Good register'
+    else: 
+        return 'Cam not registered'
+
+    
+# -------------- View live feed --------------
+@app.route('/cam_feed')
+def cam_feed():
+    add_cams_list('1234')
+
+    print()
+    print(f'stream cam: {stream_cam}')
+    print(f'cam selected: {cam_selected}')
+    print()
+
+    return render_template('cam_stream.html', 
+                           cam_list_len = len(cams_list.keys()), 
+                           cam_list = cams_list.keys(), 
+                           video_feed = stream_cam, 
+                           cam_selected = cam_selected)
+
+@app.route('/select_cam', methods=['POST'])
+def select_cam():
+    global cam_selected
+    try: 
+        cams_list[request.form["cam_id"]] = {'command': 'stream', 
+                                            'action': 'start'}
+        cam_selected = True
+    except: 
+        print('/select_cam >>>> Error, can not select camera...')
+    return redirect('/cam_feed')
+
+
+# -------------- Adjust camera settings --------------
+@app.route('/cam_settings')
+def get_can_settings():
+    end_stream()
+    # cams_list = [123, 2345]
+    # Get current cam settings? 
+    # Get cam stream
+    add_cams_list('1234')
+
+    return render_template('cam_settings.html', 
+                           cam_list_len = len(cams_list.keys()), 
+                           cam_list = cams_list.keys())
+
+
+@app.route('/update_camera', methods=['POST'])
+def update_cams():
+    if request.method == 'POST':
+        try: # a camera has to be selected
+            data_list = {"command": "update_settings",
+                        "start_thresh": request.form["start_thresh"], 
+                        "end_thresh": request.form["end_thresh"],
+                        "hist_range": request.form["hist_range"]}
+            request.form['cam_id']
+            cams_list[request.form['cam_id']] = data_list
+        except KeyError: 
+            print('Error: no camera ID selected')
+
+    return redirect('/cam_settings')
+
+
+# -------------- Video browser and playback  --------------
 @app.route('/videos')      
-def browse_videos():     
+def browse_videos():  
+    end_stream()   
     # Do not remove this, it somehow resets an error that can occur when it gets confused with directory location (CWD) 
     print(f'Active dir: {os.getcwd()}' ) 
 
@@ -76,7 +208,6 @@ def browse_videos():
                            vid_url = vid_path, 
                            search_term = vid_filter)
 
-
 @app.route('/search_videos', methods = ['POST'])      
 def search_videos():  
     if request.method == 'POST':  
@@ -84,9 +215,7 @@ def search_videos():
         return redirect(f'/videos?vid_search={search_term}')
     else:   
         print("Bad request method\nNormal redirect ")
-        return redirect(f'/videos')
-
-
+        return redirect('/videos')
 
 @app.route('/rm_vid')
 def remove_video():
@@ -105,7 +234,7 @@ def remove_video():
 
 
 
-
+# -------------- File browser navigation --------------
 # handle 'cd' command
 @app.route('/cd')
 def cd():
@@ -158,7 +287,7 @@ def success():
     
 
     
-# Handle the file upload via API call 
+# -------------- Camera video upload -------------- 
 @app.route(rule='/api', methods = ['GET', 'POST'])
 def handle_request():
     if request.method == "POST": 
@@ -171,87 +300,109 @@ def handle_request():
         if 'media' in os.getcwd():
             save_path = os.path.join(os.getcwd(), f.filename)
         else: 
-            media_path = os.path.join(os.getcwd(), 'media')
+            media_path = os.path.join(os.getcwd(), 'static\\media')
             save_path = os.path.join(media_path, f.filename)
         print(f'Save path: {save_path}')
         f.save(save_path)
 
         return 'Good upload!'
-    
+
 
 
 
 # -------------- Helpers --------------
-def get_metadata_all_files(files_list): 
-    '''Collects the descriptions for all files specified and returns the list of tags'''
-    all_data = []
-    for file_name in files_list: 
-        metadata = get_file_metadata(f'.\\static\\media\\{file_name}')
-        try: 
-            all_data.append(metadata['format']['tags']['comment'].split(', '))
-        except KeyError: 
-            print('WARNING: We have an empty comment')
-            all_data.append(['-'])
-    return all_data
+# To be moved to helpers static/helpers folder
 
-def get_file_metadata(dir): 
-    '''Returns the metadata of the specified file in JSON format''' 
-    cmd = f' ffprobe -hide_banner -show_format -loglevel quiet -of json "{dir}"'
-    ret_data = '{}'
-    try: 
-        ret_data = subprocess.check_output(cmd, shell=True)
-    except subprocess.CalledProcessError as err: 
-        print('Subprocess error in "get_file_metadata"')
-        print(f'error code: {err.returncode} \nerror message: {ret_data}')
-        print(f'The command: {cmd}')
-    return json.loads(ret_data)
+# ---- Camera video stream helpers ----
+def end_stream():
+    '''Only way to know the camera video stream is no longer needed is if the stream page is exited. \n 
+    This means pages root, /videos and /cam_settings need this since they are the only navigation points to exit /cam_feed'''
+    # Reset video stream
+    global stream_cam
 
-def get_files(dir): 
-    '''Returns the files, in specified directory, as a list'''
-    files_list = subprocess.check_output(f"dir {dir}", shell=True).decode('utf-8').split('\n')
-    # Cut the last and first items ("dir" returns a lot of descriptions and extra text)
-    if len(files_list) != 0:
-        ret_files = []
-        # Remove creation date and file size info from string
-        for file in files_list[7:-3]:
-            ret_files.append(file[39:-1])
-        return ret_files
-    return files_list # empty list for empty folder
-
-def clear_directory(dir): 
-    '''Clears only the files in a folder. Not child directories'''
-    # only run the command if there is something to clear
-    if len(get_files(dir)) > 0: 
-        print("There are files to delete") 
-        subprocess.run(f'del /q {dir}\\*.*', shell=True)
-    print('Good clear')
-
-# ToDo possible error whe old files exist and ffmpeg asks to override 
-def refresh_video_thumbnails(): 
-    '''Clear old images and generate new thumbnails for all videos in the ".\videos" directory'''
-    # clear all old thumbnails 
-    clear_directory('.\\static\\temp')
-
-    # try:
-    videos = get_files('.\\static\\media')
-    for video in videos: 
-        path = f".\\static\\media\\{video}"
-        # save image with same name but not the file type 
-        save_name = f'.\\static\\temp\\{video[:-4]}.png'
-        cmd = f'ffmpeg -i "{path}" -ss 00:00:01.000 -vframes 1 -s 640x360 "{save_name}" -loglevel quiet'
- 
-        # Extract and save the image to temp folder
-        subprocess.check_output(cmd, shell=True)
-    # Error handling is a bit wacky 
-    # except subprocess.CalledProcessError as err:
-    #     print("Error with extracting the video thumbnails")
-    #     print(f'Error code: {err.returncode}\nError msg: {err.output}')
+    # Tell the camera to end stream 
+    if stream_cam: 
+        cams_list[str(stream_cam)] = {'command': 'stream', 
+                            'action': 'end'}
+        stream_cam = False
     
-    print('Img refresh done')
+    global cam_selected
+    cam_selected = False
+
+    global frame
+    frame = None
+
+    print(f'Reset the stream: \nstream_cam = {stream_cam} \ncams list = {cams_list} \n\n')
+
+def video_gen():
+    '''A generator function that responds with the image frame packaged to display in browser \n
+    Used in /video route'''
+    while True:
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n'
+               b'\r\n' + frame + b'\r\n')
+        time.sleep(0.02) # Firefox needs some time to display image / Chrome displays image without it 
+                         # 0.04s = 40ms = 25 frames per second   
+
+# ---- Camera information storage operations ----
+def update_cams_list():
+    '''Remove inactive cameras from cams_list'''
+    bad_cams = []
+    if len(cams_list.keys()) == 0: 
+        print('No cameras found')
+    for cam in cams_list.keys(): 
+        print(f'Testing cam: {cam}')
+        # if the camera missed 2 sign of life check-ins, remove it
+        # Reason for 2 is there is a timing bug (cam works and updates but not in time, or something similar)
+        if cams_list[cam]['last_check_time'] < time.time()-cam_update_interval*2: 
+            print('>>>>> Cam is offline/no sign of life')
+            diff = time.time()-cams_list[cam]['last_check_time']
+            print(f'    Time difference: {diff}')
+            comp_diff = (time.time()-cam_update_interval*2)-cams_list[cam]['last_check_time']
+            print(f'    Compared time difference: {comp_diff} (- good, + bad...)')
+            bad_cams.append(cam)
+    # Can't remove items of a dictionary during iteration, can only happen afterwards 
+    for cam in bad_cams: 
+        print(f'>>> REMOVING camera {cam}')
+        cams_list.pop(cam)
+
+def add_cams_list(cam_id): 
+    '''Ensure only unique cameras are available and add new once'''
+    # Add the first camera
+    if len(cams_list.keys()) == 0:
+        cams_list[cam_id] = clean_cam_data()
+        print('Added camera')
+        return 'good addition'
+    # Only add if there are no duplicates 
+    elif cam_id not in cams_list.keys(): 
+        cams_list[cam_id] = {'last_check_time': time.time(),
+                             'command': 'idle'}
+        print('Added camera')
+        return 'good addition'
+    else: 
+        # print('Could NOT add camera')
+        return 'can not added'
+    
+def clean_cam_data(): 
+    '''Returns the default camera data structure \n
+    With defaults: command = idle and last_check_time = current updated time'''
+    return {'last_check_time': time.time(),
+            'command': 'idle'}
+
+
+
+# Periodic check to wee if the cameras are still reporting. 
+# cam_update_interval = 10
+# scheduler = APScheduler()
+# scheduler.init_app(app)
+# scheduler.start()
+# scheduler.add_job(id='cam_update-job', func=update_cams_list, trigger='interval', seconds=cam_update_interval)
 
 
 # command to run the server 
 # flask --app main --debug  run   
-  
+# OR (to access it from other machines) 
+# python main.py
+
 if __name__ == '__main__':   
-    app.run(host='0.0.0.0', port=8001, debug=True)
+    app.run(host=ip_addr, port=5000, debug=True) #, use_reloader=False)
