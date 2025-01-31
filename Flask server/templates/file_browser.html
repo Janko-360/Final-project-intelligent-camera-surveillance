@@ -1,85 +1,198 @@
 <html>
     <head>
     <title>File manager</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+          margin: 0;
+          /* background-color: #d38787; */
+        }
+        
+        .header {
+          background-color: #bdb9b9;
+          padding: 20px;
+          text-align: center;
+          height: 15%;
+        }
+        .header.h1 {
+            color: #8bce3f;
+        }
+
+        .column {
+            float: left;
+            padding: 15px;
+        }
+        .clearfix::after {
+            content: "";
+            clear: both;
+            display: table;
+        }
+
+        .menu {
+            background-color: #dadada;
+            width: 25%;
+            height: 85%;
+        }
+
+        .content {
+            background-color: #f7efef;
+            width: 75%;
+            height: 85%;
+        }
+
+        .menu ul {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        }
+
+        .menu div {
+            margin: 5px;
+            width: 90%; 
+            background-color: #86b33e;
+            padding: 10px;
+        }
+
+        .menu div:hover {
+            width: 95%; 
+            background-color: #63852d;
+            padding: 15px;
+        }
+
+        .menu a {
+            color: #fff9f9;
+            text-decoration: none;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+
+        .center_content {
+            text-align: center;
+            margin-left: auto;
+            margin-right: auto;
+            width: 100%;
+            background-color:  #aceb47;
+        }
+
+        #vid_spaceholder_text {
+            text-align: center;
+            vertical-align: middle;
+            color: #fff9f9;
+            font-size: 1.25em;
+        }
+        #vid_text_div {
+            vertical-align: middle;
+            background-color: #807e7e;
+            height:240px;
+            width:426px; 
+        }
+        #vid_vid_div {
+            width:426px; 
+            height:240px; 
+            display: block;
+            margin: 0 auto;
+        }
+        #vid_div {
+            vertical-align: middle;
+            height:240px;
+            width:426px; 
+            background-color: #807e7e;
+        }
+
+
+    </style>
     </head>
     <body>
-    <div align="center">
-        <h1>Local file system</h1>
-        <p><strong>CWD: </strong>{{ current_working_directory }}</p>
-        <form action = "/search_videos" method = "POST"> 
-            <label for="tag_name">Search tag:</label>  
-            <input type="text" id="tag_name" name="tag_name" />   
-            <input type = "submit" value="Search">   
-        </form>  
-        {% if search_term != 'Nothing' and search_term != None %}
-            <p>Videos that have: {{search_term}}</p>
-        {% else %}
-            <p></p>
-        {% endif%}
-        <form action = "/videos"> 
-            <input type = "submit" value="Clear search">   
-        </form>
-    </div>
-    <nav>
-        <a href="/">Home</a>
-    </nav>
-    <hr>
-    
-    
-    <ul>
-        <!-- <form action="/md">
-        <input type="submit" value="New folder"/>
-        <input name="folder" type="text" value="new_folder"/>
-        </form> -->
-        <!-- <hr> -->
-        <li><a href="/cd?path=..">..</a></li>
-        <hr>
-        {% for item in render_data %}
-        <!-- item[0] = file name
-            item[1] = thumbnail img name
-            item[2] = descriptive tags  -->
-        {% if '.' not in item[0]%}
-            <li>   
-                <a href="/cd?path={{current_working_directory + '/static/media/' + item}}"> 
-                    <img src=".\temp\{{item}}.png" style="width:42px;height:42px;">{{item}}
-                </a>
-            </li>
-        {% elif '.txt' in item[0] or '.py' in item or '.json' in item %}
-            <li><strong><a href="/view?file={{current_working_directory + '/static/media/' + item}}">{{item}}</a></strong></li>
+        <div class="header">
+            <h1>Intelligent camera surveillance system </h1>
+        </div> 
+    <!-- Body -->
+    <div class="clearfix">
 
-
-        {% elif '.mp4' in item[0] or '.avi' in item[0] %}
-            <li>
-                <a href="/videos?video_to_play={{'.\\static\\media\\' + item[0]}}">
-                    <img src="{{ './static/temp/'  + item[1] }}" style="width:42px; height:42px;">
-                    {{item[0]}}  
-                </a>
-                <br>  
-                <p>tags: 
-                {% for tag in item[2] %}
-                    {{tag}},
-                {% endfor %} </p>
-                <p>Delete file <a href="/rm_vid?name={{'.\\static\\media\\' + item[0]}}"> X </a></p>
-                
-            </li>
-
-
-        {% else %}
-            <li>{{item}}</li>
-        {% endif%}
-        {% endfor %}
-    </ul>
-
-    {% if vid_url != 'Nothing' and vid_url != None%}
-        <video controls="controls" preload="preload" style="width:426px; height:240px;" autoplay="autoplay">
-            <source src="{{ vid_url }}" type="video/mp4"></source>
-        </video>
-    {% else %}
-        <div  style="width:426px; height:240px; background-color: #807e7e">
-            <p>No video selected</p>
+        <!-- Nav -->
+        <div class="column menu">
+            <ul>
+                <li><a href="/"><div>Home</div></a></li>
+                <li><a href="/cam_settings"><div>Adjust camera settings</div></a></li>
+                <li><a href="/cam_feed"><div>View live feed</div></a></li>
+            </ul>
         </div>
-    {% endif%}
 
+        <!-- Page content -->
+        <div class="column content"> 
+            
+            <!-- Show PWD and tag search bar -->
+            <div class="center_content">
+                <h2 class="center_content">Local file system</h2>
+                <p class="center_content"><strong>CWD: </strong>{{ current_working_directory }}</p>
+                <form action = "/search_videos" method = "POST" class="center_content"> 
+                    <label for="tag_name">Search tag:</label>  
+                    <input type="text" id="tag_name" name="tag_name" />   
+                    <input type = "submit" value="Search">   
+                </form>  
+                {% if search_term != 'Nothing' and search_term != None %}
+                    <p class="center_content">Videos that have: {{search_term}}</p>
+                {% else %}
+                    <p class="center_content"></p>
+                {% endif%}
+                <form action = "/videos" class="center_content"> 
+                    <input type = "submit" value="Clear search" class="center_content">   
+                </form>
+            </div>
+
+            <!-- File navigation -->
+            <a href="/cd?path=..">.. (cd ..)</a>
+            <!-- Files in directory -->
+            <ul>  
+                {% for item in render_data %}
+                <!-- item[0] = file name
+                    item[1] = thumbnail img name
+                    item[2] = descriptive tags  -->
+                {% if '.' not in item[0]%}
+                    <li>   
+                        <a href="/cd?path={{current_working_directory + '/static/media/' + item}}"> 
+                            <img src=".\temp\{{item}}.png" style="width:42px;height:42px;">{{item}}
+                        </a>
+                    </li>
+                {% elif '.mp4' in item[0] or '.avi' in item[0] %}
+                    <li>
+                        <a href="/videos?video_to_play={{'.\\static\\media\\' + item[0]}}">
+                            <img src="{{ './static/temp/'  + item[1] }}" style="width:42px; height:42px;">
+                            {{item[0]}}  
+                        </a>
+                        <br>  
+                        <p>tags: 
+                        {% for tag in item[2] %}
+                            {{tag}},
+                        {% endfor %} </p>
+                        <p>Delete file <a href="/rm_vid?name={{'.\\static\\media\\' + item[0]}}"> X </a></p>
+                    </li>
+                {% else %}
+                    <li>{{item}}</li>
+                {% endif%}
+                {% endfor %}
+            </ul>
+
+            <!-- Video place holder or playable media -->
+            <div id="vid_div">
+                {% if vid_url != 'Nothing' and vid_url != None%}
+                    <div id="vid_vid_div"> 
+                        <video id="#vid_vid_div" controls="controls" preload="preload">
+                            <source src="{{ vid_url }}" type="video/mp4"></source>
+                        </video>
+                    </div>
+                        
+                    
+                {% else %}
+                        <div id="vid_text_div">
+                            <p id="vid_spaceholder_text">No video selected</p>
+                        </div>                    
+                {% endif%}
+            </div>
+        </div>
+    </div>
 
     </body>
 </html>

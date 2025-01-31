@@ -1,0 +1,131 @@
+<html>   
+<head>   
+    <title>Adjust cameras</title>   
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+          margin: 0;
+        }
+        
+        .header {
+          background-color: #bdb9b9;
+          padding: 20px;
+          text-align: center;
+          height: 15%;
+        }
+        .header.h1 {
+            color: #8bce3f;
+        }
+
+        .column {
+            float: left;
+            padding: 15px;
+        }
+        .clearfix::after {
+            content: "";
+            clear: both;
+            display: table;
+        }
+
+        .menu {
+            background-color: #dadada;
+            width: 25%;
+            height: 85%;
+        }
+
+        .content {
+            background-color: #fff9f9;
+            width: 75%;
+            height: 85%;
+        }
+
+        .menu ul {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        }
+
+        .menu div {
+            margin: 5px;
+            width: 90%; 
+            background-color: #86b33e;
+            padding: 10px;
+        }
+
+        .menu div:hover {
+            width: 95%; 
+            background-color: #63852d;
+            padding: 15px;
+        }
+
+        .menu a {
+            color: #fff9f9;
+            text-decoration: none;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+
+        .form_head {
+            font-weight: bold;
+            font-size: 1.5em;
+        }
+
+        fieldset {
+            padding: 20px;
+            background-color: #f1f1f1;
+        }
+        </style>
+</head>   
+<body>   
+    <div class="header">
+        <h1>Intelligent camera surveillance system</h1>
+    </div> 
+
+    <!-- Body -->
+    <div class="clearfix">
+        <!-- Nav -->
+        <div class="column menu">
+            <ul>
+                <li><a class="box" href="/"><div>Home</div></a></li>
+                <li><a href="/videos?video_to_play=Nothing"><div>Browse videos</div></a></li>
+                <li><a class="box" href="/cam_feed"><div>View live feed</div></a></li>
+            </ul>
+        </div>
+
+        <!-- Page content -->
+        <div class="column content"> 
+            <h2>Change camera settings</h2>
+            {% if cam_list_len==0 %}
+                <p>Sorry no cameras connected to network</p>
+            {% else %}  
+                <form action = "/update_camera" method = "post">  
+                    <fieldset>
+                        <legend class="form_head">Select a camera:</legend>
+                        {% for item in cam_list %}    
+                            <label for="cam_id">Camera {{item}}</label>   
+                            <input type="radio" name="cam_id" value="{{item}}">
+                            <br>
+                        {% endfor %} 
+                    </fieldset>
+
+                    <fieldset>
+                        <legend class="form_head">Settings:</legend>
+                        <label for="start_thresh">Recording starting trigger threshold (0-200%):</label>   
+                        <input type="range" id="start_thresh" name="start_thresh" min="0" max="200"> 
+                        <br>
+                        <label for="end_thresh">Recording stopping trigger threshold (0-200%):</label>   
+                        <input type="range" id="end_thresh" name="end_thresh" min="0" max="200">
+                        <br>
+                        <label for="hist_range">History amount (5-100):</label>   
+                        <input type="range" id="hist_range" name="hist_range" min="5" max="100">
+                        <br><br>
+                        <input type = "submit" value="Update camera">   
+                    </fieldset>
+                </form>   
+            {% endif%}
+        </div>
+    </div>        
+</body>   
+</html>

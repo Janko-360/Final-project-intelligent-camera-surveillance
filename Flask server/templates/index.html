@@ -1,22 +1,103 @@
 <html>   
 <head>   
     <title>Home</title>   
-</head>   
-<body>   
-    <h1>Welcome to camera surveillance system </h1>
-    <nav>
-        <a href="/videos?video_to_play=Nothing">Browse videos</a> <br>
-        <a href="/cam_settings">Adjust camera settings</a> <br>
-        <a href="/try">Try page</a>
-    </nav>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+          margin: 0;
+          /* background-color: #d38787; */
+        }
+        
+        .header {
+          background-color: #bdb9b9;
+          padding: 20px;
+          text-align: center;
+          height: 15%;
+        }
+        .header.h1 {
+            color: #8bce3f;
+        }
 
-    <br>
-    <hr>
-    <br>
-    <h3>File upload test</h3>
-    <form action = "/success" method = "post" enctype="multipart/form-data">   
-        <input type="file" name="file" />   
-        <input type = "submit" value="Upload">   
-    </form>   
+        .column {
+            float: left;
+            padding: 15px;
+        }
+        .clearfix::after {
+            content: "";
+            clear: both;
+            display: table;
+        }
+
+        .menu {
+            background-color: #dadada;
+            width: 25%;
+            height: 85%;
+        }
+
+        .content {
+            background-color: #fff9f9;
+            width: 75%;
+            height: 85%;
+        }
+
+        .menu ul {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        }
+
+        .menu div {
+            margin: 5px;
+            width: 90%; 
+            background-color: #86b33e;
+            padding: 10px;
+        }
+
+        .menu div:hover {
+            width: 95%; 
+            background-color: #63852d;
+            padding: 15px;
+        }
+
+        .menu a {
+            color: #fff9f9;
+            text-decoration: none;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+        </style>
+</head>   
+<body>  
+    <div class="header">
+        <h1>Welcome to camera surveillance system </h1>
+    </div> 
+    <div class="clearfix">
+        <div class="column menu">
+            <ul>
+                <li><a href="/videos?video_to_play=Nothing"><div>Browse videos</div></a></li>
+                <li><a href="/cam_settings"><div>Adjust camera settings</div></a></li>
+                <li><a href="/cam_feed"><div>View live feed</div></a></li>
+                <br><br>
+                <li><a href="/try"><div>Try page</div></a></li>
+            </ul>
+            <!-- <div class="box"></div>
+            <div class="box"></div>
+            <div class="box">></div> -->
+        </div>
+    
+        <div class="column content"> 
+            this is body...
+            <br> 
+            <hr>
+            <br>
+            probably add some telemetry data (cam status, health, event summary, ...)
+            <br>
+            for live cam, show: status, alarm, ... 
+        </div>
+    </div>
+
+
 </body>   
 </html>

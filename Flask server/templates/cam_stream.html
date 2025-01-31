@@ -1,0 +1,128 @@
+<html>   
+<head>   
+    <title>Video stream</title>   
+    <!-- Little trick to auto refresh while the server is waiting for the camera to ask for new settings and start to send the video stream -->
+    {% if not video_feed and cam_selected %}
+        <meta http-equiv="refresh" content="1">
+    {% endif %}
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+          margin: 0;
+          /* background-color: #d38787; */
+        }
+        
+        .header {
+          background-color: #bdb9b9;
+          padding: 20px;
+          text-align: center;
+          height: 15%;
+        }
+        .header.h1 {
+            color: #8bce3f;
+        }
+
+        .column {
+            float: left;
+            padding: 15px;
+        }
+        .clearfix::after {
+            content: "";
+            clear: both;
+            display: table;
+        }
+
+        .menu {
+            background-color: #dadada;
+            width: 25%;
+            height: 85%;
+        }
+
+        .content {
+            background-color: #fff9f9;
+            width: 75%;
+            height: 85%;
+        }
+
+        .menu ul {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        }
+
+        .menu div {
+            margin: 5px;
+            width: 90%; 
+            background-color: #86b33e;
+            padding: 10px;
+        }
+
+        .menu div:hover {
+            width: 95%; 
+            background-color: #63852d;
+            padding: 15px;
+        }
+
+        .menu a {
+            color: #fff9f9;
+            text-decoration: none;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+
+        .cam_feed {
+            display: block;
+            width: 75%;
+            height: 75%;
+            margin-top: 40px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        </style>
+</head>   
+<body>  
+    <div class="header">
+        <h1>Intelligent camera surveillance system </h1>
+    </div> 
+
+    <!-- Body -->
+    <div class="clearfix">
+        <!-- Nav -->
+        <div class="column menu">
+            <ul>
+                <li><a class="box" href="/"><div>Home</div></a></li>
+                <li><a href="/videos?video_to_play=Nothing"><div>Browse videos</div></a></li>
+                <li><a class="box" href="/cam_settings"><div>Adjust camera settings</div></a></li>
+            </ul>
+        </div>
+    
+        <!-- Page content -->
+        <div class="column content"> 
+            <h2>Select camera to observe</h2>
+            {% if cam_list_len==0 %}
+                <p style="color: red">No cameras connected to network</p>
+            {% else %}  
+                <form action = "/select_cam" method = "POST">   
+                {% for item in cam_list %}    
+                    <label for="cam_id">Camera {{item}}</label>   
+                    <input type="radio" name="cam_id" value="{{item}}">
+                    <br>
+                {% endfor %} 
+                <input type = "submit" value="Stream camera">   
+                </form>   
+            {% endif %}
+            
+            {% if video_feed %}
+                <img class="cam_feed" src="/cam_video">
+            {% else %}  
+                <img class="cam_feed" src="./static/assets/no_vid.png">
+            {% endif %}
+        </div>
+    </div>
+
+
+</body>   
+</html>
