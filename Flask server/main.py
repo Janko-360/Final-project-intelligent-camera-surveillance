@@ -16,7 +16,7 @@ import time
 cams_list = {}
 
 
-ip_addr = '192.168.235.107' # Use this address to have it hosted on local network NOT JUST ON LOCAL MACHINE 
+ip_addr = '192.168.235.104' # Use this address to have it hosted on local network NOT JUST ON LOCAL MACHINE 
 
 app = Flask(__name__) 
 
@@ -48,7 +48,11 @@ def upload():
 
     # keep jpg data in global variable
     frame = request.data
+    # print(frame)
     stream_cam = request.remote_addr
+
+    # print('\nNew frame\n')
+
     return "OK"
 
 @app.route('/cam_video')
@@ -59,6 +63,7 @@ def video():
         # if you use `boundary=other_name` then you have to yield `b--other_name\r\n`
         return Response(video_gen(), mimetype='multipart/x-mixed-replace; boundary=frame')
     else:
+        print('\nNO frames returned\n')
         return ""
 
 @app.route('/get_cam_commands', methods=['GET'])
@@ -67,9 +72,8 @@ def listen():
     This is also used to update the sign of file of the cameras'''
     cam_id = request.remote_addr
 
-    print(f'\nCam check in:  {cam_id}')
+    print(f'Cam check in:  {cam_id}')
     add_cams_list(cam_id)
-
 
     try: 
         # NB str is needed to cheat the shadow copy of the dict data
@@ -82,8 +86,6 @@ def listen():
     except: 
         ret_data = 'Error...'
         print('>>>>> ERROR cam address not found in cam dict')
-
-
 
     return ret_data
 
@@ -106,6 +108,11 @@ def cam_feed():
     print()
     print(f'stream cam: {stream_cam}')
     print(f'cam selected: {cam_selected}')
+    try: 
+        print(f'Frame len: {len(frame)}')
+    except:
+        print(f'Frame len: {frame}')
+
     print()
 
     return render_template('cam_stream.html', 
@@ -219,9 +226,7 @@ def search_videos():
 
 @app.route('/rm_vid')
 def remove_video():
-
     name = request.args.get('name')
-
     cmd = f'del "{name}"'
     print(cmd)
     try: 
@@ -322,9 +327,10 @@ def end_stream():
 
     # Tell the camera to end stream 
     if stream_cam: 
-        cams_list[str(stream_cam)] = {'command': 'stream', 
-                            'action': 'end'}
-        stream_cam = False
+        cams_list[str(stream_cam)] = {'last_check_time': time.time(),
+                                      'command': 'stream',
+                                      'action': 'end'}
+    stream_cam = False
     
     global cam_selected
     cam_selected = False
@@ -347,6 +353,10 @@ def video_gen():
 # ---- Camera information storage operations ----
 def update_cams_list():
     '''Remove inactive cameras from cams_list'''
+
+    if not stream_cam: 
+        frame 
+
     bad_cams = []
     if len(cams_list.keys()) == 0: 
         print('No cameras found')
@@ -367,24 +377,21 @@ def update_cams_list():
         cams_list.pop(cam)
 
 def add_cams_list(cam_id): 
-    '''Ensure only unique cameras are available and add new once'''
-    # Add the first camera
-    if len(cams_list.keys()) == 0:
-        cams_list[cam_id] = clean_cam_data()
-        print('Added camera')
-        return 'good addition'
-    # Only add if there are no duplicates 
-    elif cam_id not in cams_list.keys(): 
-        cams_list[cam_id] = {'last_check_time': time.time(),
-                             'command': 'idle'}
-        print('Added camera')
-        return 'good addition'
-    else: 
-        # print('Could NOT add camera')
+    '''Not final version !!!'''
+    try: 
+        if cam_id not in cams_list.keys(): 
+            cams_list[cam_id] = clean_cam_data()
+            print('Added camera')
+            return 'good addition'
+        else: 
+            pass
+    except: 
+        print('Could NOT add or update camera')
         return 'can not added'
+        
     
 def clean_cam_data(): 
-    '''Returns the default camera data structure \n
+    '''Returns the default camera data structure (the dict) \n
     With defaults: command = idle and last_check_time = current updated time'''
     return {'last_check_time': time.time(),
             'command': 'idle'}
@@ -392,11 +399,11 @@ def clean_cam_data():
 
 
 # Periodic check to wee if the cameras are still reporting. 
-# cam_update_interval = 10
-# scheduler = APScheduler()
-# scheduler.init_app(app)
-# scheduler.start()
-# scheduler.add_job(id='cam_update-job', func=update_cams_list, trigger='interval', seconds=cam_update_interval)
+cam_update_interval = 10
+scheduler = APScheduler()
+scheduler.init_app(app)
+scheduler.start()
+scheduler.add_job(id='cam_update-job', func=update_cams_list, trigger='interval', seconds=cam_update_interval)
 
 
 # command to run the server 
@@ -405,4 +412,4 @@ def clean_cam_data():
 # python main.py
 
 if __name__ == '__main__':   
-    app.run(host=ip_addr, port=5000, debug=True) #, use_reloader=False)
+    app.run(host=ip_addr, port=5000, debug=True, use_reloader=False)
