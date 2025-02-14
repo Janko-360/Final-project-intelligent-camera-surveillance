@@ -81,7 +81,7 @@
             margin-left: auto;
             margin-right: auto;
         }
-        </style>
+    </style>
 </head>   
 <body>  
     <div class="header">
@@ -100,24 +100,23 @@
         </div>
     
         <!-- Page content -->
-        <div class="column content"> 
-            <h2>Select camera to observe</h2>
-            {% if cam_list_len==0 %}
-                <p style="color: red">No cameras connected to network</p>
-            {% else %}  
-                <form action = "/select_cam" method = "POST">   
-                {% for item in cam_list %}    
-                    <label for="cam_id">Camera {{item}}</label>   
-                    <input type="radio" name="cam_id" value="{{item}}">
-                    <br>
-                {% endfor %} 
-                <input type = "submit" value="Stream camera">   
-                </form>   
-            {% endif %}
-            
+        <div class="column content">             
             {% if video_feed %}
                 <img class="cam_feed" src="/cam_video">
             {% else %}  
+                <h2>Select camera to observe</h2>
+                {% if cam_list_len==0 %}
+                    <p style="color: red">No cameras connected to network</p>
+                {% else %}  
+                    <form action = "/select_cam" method = "POST">   
+                    {% for item in cam_list %}    
+                        <label for="cam_id">Camera {{item}}</label>   
+                        <input type="radio" name="cam_id" value="{{item}}">
+                        <br>
+                    {% endfor %} 
+                    <input type = "submit" value="Stream camera">   
+                    </form>   
+                {% endif %}
                 <img class="cam_feed" src="./static/assets/no_vid.png">
             {% endif %}
         </div>
