@@ -11,7 +11,7 @@
         }
         
         .header {
-          background-color: #bdb9b9;
+          background-color: #c0c0c0;
           padding: 20px;
           text-align: center;
           height: 15%;
@@ -24,11 +24,11 @@
             float: left;
             padding: 15px;
         }
-        .clearfix::after {
-            content: "";
-            clear: both;
-            display: table;
-        }
+        /* .clearfix::after { */
+            /* content: ""; */
+            /* clear: both; */
+            /* display: table; */
+        /* } */
 
         .menu {
             background-color: #dadada;
@@ -37,7 +37,7 @@
         }
 
         .content {
-            background-color: #f7efef;
+            background-color: #ffffff;
             width: 75%;
             height: 85%;
         }
@@ -73,7 +73,7 @@
             margin-left: auto;
             margin-right: auto;
             width: 100%;
-            background-color:  #aceb47;
+            background-color:  #ffffff;
         }
 
         #vid_spaceholder_text {
@@ -91,8 +91,9 @@
         #vid_vid_div {
             width:426px; 
             height:240px; 
-            display: block;
-            margin: 0 auto;
+            /* display: block; */
+            /* margin-right: 100px; */
+            /* margin: 0 auto; */
         }
         #vid_div {
             vertical-align: middle;
@@ -124,13 +125,13 @@
         <div class="column content"> 
             
             <!-- Show PWD and tag search bar -->
-            <div class="center_content">
-                <h2 class="center_content">Local file system</h2>
-                <p class="center_content"><strong>CWD: </strong>{{ current_working_directory }}</p>
+            <div class="center_content" style="padding-top: 10px;">
+                <!-- <h2 class="center_content">Local file system</h2> -->
+                <!-- <p class="center_content"><strong>CWD: </strong>{{ current_working_directory }}</p> -->
                 <form action = "/search_videos" method = "POST" class="center_content"> 
                     <label for="tag_name">Search tag:</label>  
                     <input type="text" id="tag_name" name="tag_name" />   
-                    <input type = "submit" value="Search">   
+                    <input type = "submit" value="Search" style="background-color: #86b33e;">   
                 </form>  
                 {% if search_term != 'Nothing' and search_term != None %}
                     <p class="center_content">Videos that have: {{search_term}}</p>
@@ -138,14 +139,16 @@
                     <p class="center_content"></p>
                 {% endif%}
                 <form action = "/videos" class="center_content"> 
-                    <input type = "submit" value="Clear search" class="center_content">   
+                    <input type = "submit" value="Clear search" class="center_content" style="width: 15%; background-color: #86b33e;">   
                 </form>
             </div>
 
             <!-- File navigation -->
-            <a href="/cd?path=..">.. (cd ..)</a>
+            <!-- Just a nice to have -->
+            <!-- <a href="/cd?path=..">.. (cd ..)</a> -->
+
             <!-- Files in directory -->
-            <ul>  
+            <div style="float: left; width: 50%; text-align: center;">
                 {% for item in render_data %}
                 <!-- item[0] = file name
                     item[1] = thumbnail img name
@@ -157,34 +160,35 @@
                         </a>
                     </li>
                 {% elif '.mp4' in item[0] or '.avi' in item[0] %}
-                    <li>
-                        <a href="/videos?video_to_play={{'.\\static\\media\\' + item[0]}}">
-                            <img src="{{ './static/temp/'  + item[1] }}" style="width:42px; height:42px;">
+                    <div style="background-color: #cacaca; margin: 10px; ">
+                        <a href="/videos?video_to_play={{'.\\static\\media\\' + item[0]}}" style="display: inline-block;">
+                            <img src="{{ './static/temp/'  + item[1] }}" style="width:141px; height:84px;">
+                            <br>
                             {{item[0]}}  
                         </a>
                         <br>  
-                        <p>tags: 
-                        {% for tag in item[2] %}
-                            {{tag}},
-                        {% endfor %} </p>
-                        <p>Delete file <a href="/rm_vid?name={{'.\\static\\media\\' + item[0]}}"> X </a></p>
-                    </li>
+                        <div style="background-color: #b6b6b6; margin-top: 5px;">
+                            Tags:
+                            {% for tag in item[2] %}
+                                <b>{{tag}},</b> 
+                            {% endfor %}
+                        </div>
+                        <p style="display: inline-block; text-align: center;">Delete <a href="/rm_vid?name={{'.\\static\\media\\' + item[0]}}"> X </a></p>
+                    </div>
                 {% else %}
                     <li>{{item}}</li>
                 {% endif%}
                 {% endfor %}
-            </ul>
+            </div>
 
             <!-- Video place holder or playable media -->
-            <div id="vid_div">
+            <div id="vid_div"  style="float: right; ">                
                 {% if vid_url != 'Nothing' and vid_url != None%}
                     <div id="vid_vid_div"> 
-                        <video id="#vid_vid_div" controls="controls" preload="preload">
-                            <source src="{{ vid_url }}" type="video/mp4"></source>
+                        <video id="vid_vid_div" controls="controls" preload="preload">
+                            <source src="{{vid_url}}" type="video/mp4"></source>
                         </video>
                     </div>
-                        
-                    
                 {% else %}
                         <div id="vid_text_div">
                             <p id="vid_spaceholder_text">No video selected</p>
