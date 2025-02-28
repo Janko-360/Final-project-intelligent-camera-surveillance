@@ -13,7 +13,7 @@ v7 = 'yolox_l.pt' # ...
 v8 = 'yolov8s.pt'
 v11 = 'yolo11s.pt'
 
-yolo = YOLO(v11)
+yolo = YOLO('yolo11s.pt')
 
 min_conf = 0.5
 
@@ -49,7 +49,6 @@ while True:
     detection_res = {}
     for result in results:
         classes_names = result.names
-
         objs = [box for box in result.boxes if box.conf[0] > min_conf]
         for obj in objs: 
             name = classes_names[int(obj.cls[0])]
