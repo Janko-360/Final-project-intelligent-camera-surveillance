@@ -112,14 +112,26 @@
 
                     <fieldset>
                         <legend class="form_head">Settings:</legend>
-                        <label for="start_thresh">Recording starting trigger threshold (0-200%):</label>   
-                        <input type="range" id="start_thresh" name="start_thresh" min="0" max="200"> 
+                        <label for="max_vid_time">Maximum recording time (2s-30s):</label>   
+                        <input type="range" id="max_vid_time" name="max_vid_time" min="2" max="30" value="10">
                         <br>
-                        <label for="end_thresh">Recording stopping trigger threshold (0-200%):</label>   
-                        <input type="range" id="end_thresh" name="end_thresh" min="0" max="200">
+                        <label for="min_vid_time">Minimum recording time (0s-5s):</label>   
+                        <input type="range" id="min_vid_time" name="min_vid_time" min="0" max="5" value="2">
                         <br>
-                        <label for="hist_range">History amount (5-100):</label>   
-                        <input type="range" id="hist_range" name="hist_range" min="5" max="100">
+                        
+                        <p style="margin-bottom: 0px; padding-bottom: 1px;">Select objects that will trigger an alarm</p>
+                        {% for obj in alarm_objs %}    
+                            {% if obj == 'person' or obj == 'car' %}
+                                <label for="{{obj}}">{{obj}}</label>
+                                <input type="checkbox" id="{{obj}}" name="{{obj}}" value="True" checked="checked"/><br>
+                            {% else %}
+                                <label for="{{obj}}">{{obj}}</label>
+                                <input type="checkbox" id="{{obj}}" name="{{obj}}" value="True"/><br>                               
+                            {% endif %}
+                        {% endfor %} 
+
+                        <p>Other settings (sensitivity, detection settings)</p>
+
                         <br><br>
                         <input type = "submit" value="Update camera">   
                     </fieldset>
