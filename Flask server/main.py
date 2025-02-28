@@ -16,7 +16,8 @@ import time
 cams_list = {}
 
 
-ip_addr = '192.168.235.104' # Use this address to have it hosted on local network NOT JUST ON LOCAL MACHINE 
+ip_addr = '192.168.235.106' # Use this address to have it hosted on local network NOT JUST ON LOCAL MACHINE 
+old_ip_addr = '192.168.2.100'
 
 app = Flask(__name__) 
 
@@ -28,6 +29,8 @@ stream_cam = False
 # The website (cam_stream.html) has to refresh until the stream stars 
 cam_selected = False
 
+# List of all possible objects that can raise an alarm 
+alarm_objs = ['person', 'car', 'motorcycle', 'truck', 'bus']
 
 @app.route('/')
 def main():   
@@ -144,18 +147,23 @@ def get_can_settings():
 
     return render_template('cam_settings.html', 
                            cam_list_len = len(cams_list.keys()), 
-                           cam_list = cams_list.keys())
+                           cam_list = cams_list.keys(), 
+                           alarm_objs = alarm_objs)
 
 
 @app.route('/update_camera', methods=['POST'])
 def update_cams():
     if request.method == 'POST':
+        print(request.form)
         try: # a camera has to be selected
             data_list = {"command": "update_settings",
-                        "start_thresh": request.form["start_thresh"], 
-                        "end_thresh": request.form["end_thresh"],
-                        "hist_range": request.form["hist_range"]}
-            request.form['cam_id']
+                        "min_t_thresh": request.form["min_vid_time"], 
+                        "max_t_thresh": request.form["max_vid_time"]}
+            obj_setting = []
+            for obj in alarm_objs: 
+                if obj in request.form.keys():
+                    obj_setting.append(obj)
+            data_list['alarm_objs'] = obj_setting
             cams_list[request.form['cam_id']] = data_list
         except KeyError: 
             print('Error: no camera ID selected')
@@ -314,7 +322,6 @@ def handle_request():
 
 
 
-
 # -------------- Helpers --------------
 # To be moved to helpers static/helpers folder
 
@@ -338,7 +345,7 @@ def end_stream():
     global frame
     frame = None
 
-    print(f'Reset the stream: \nstream_cam = {stream_cam} \ncams list = {cams_list} \n\n')
+    # print(f'Reset the stream: \nstream_cam = {stream_cam} \ncams list = {cams_list} \n\n')
 
 def video_gen():
     '''A generator function that responds with the image frame packaged to display in browser \n
@@ -377,7 +384,7 @@ def update_cams_list():
         cams_list.pop(cam)
 
 def add_cams_list(cam_id): 
-    '''Not final version !!!'''
+    '''Still needs some fine tuning for the forget and re-addition cams'''
     try: 
         if cam_id not in cams_list.keys(): 
             cams_list[cam_id] = clean_cam_data()
@@ -412,4 +419,4 @@ scheduler.add_job(id='cam_update-job', func=update_cams_list, trigger='interval'
 # python main.py
 
 if __name__ == '__main__':   
-    app.run(host=ip_addr, port=5000, debug=True, use_reloader=False)
+    app.run(host=ip_addr, port=5000, debug=False, use_reloader=False)
