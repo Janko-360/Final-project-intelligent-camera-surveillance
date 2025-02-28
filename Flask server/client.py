@@ -12,7 +12,7 @@ if not cap.isOpened():
 else: 
     print('Camera working')
 
-url = 'http://192.168.235.107:5000'
+url = 'http://192.168.235.103:5000'
 
 last_update_request = time.time()
 
@@ -68,19 +68,30 @@ def connect_to_server():
 connect_to_server()
 
 
+frame_errors = 0
+
 # Once connected, start the detection and recording work 
 while True: 
     ret, img = cap.read()
 
     if not ret: 
-        print('Fatal error, access to camera but can not get frame data \nShutting down')
-        exit()
+        if frame_errors > 10:
+            # Has to shutdown and exit, otherwise it gets lag or stuck in a infinite loop
+            print('Fatal error, access to camera but can not get frame data \nShutting down')
+            exit()
+        else: 
+            print('Frame error')
+            frame_errors += 1
     else:                
         _, frame = cv2.imencode('.JPG', img)
 
+        cv2.imshow("OUTPUT", img)
+
+
         if server_command == 'stream': 
             requests.put(url + '/stream', data=frame.tobytes())
-            cv2.imshow("OUTPUT", img)
+            cv2.imshow("Recording", img)
+
 
 
 
