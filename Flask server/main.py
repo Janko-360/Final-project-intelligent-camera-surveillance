@@ -30,7 +30,7 @@ stream_cam = False
 cam_selected = False
 
 # List of all possible objects that can raise an alarm 
-alarm_objs = ['person', 'car', 'motorcycle', 'truck', 'bus']
+alarm_objs = ['person', 'car', 'motorcycle', 'truck', 'bus', 'ball', 'bird']
 
 @app.route('/')
 def main():   
@@ -76,7 +76,7 @@ def listen():
     cam_id = request.remote_addr
 
     print(f'Cam check in:  {cam_id}')
-    add_cams_list(cam_id)
+    add_cams_list(cam_id, request.args.get('state'))
 
     try: 
         # NB str is needed to cheat the shadow copy of the dict data
@@ -87,16 +87,18 @@ def listen():
         if cams_list[cam_id]['command'] != 'idle': 
             cams_list[cam_id] = clean_cam_data()
     except: 
-        ret_data = 'Error...'
+        ret_data = 'Cam not recognized'
         print('>>>>> ERROR cam address not found in cam dict')
 
+        print(cams_list)
+    # print(f'Get cam commands return value: {ret_data}')
     return ret_data
 
 
 @app.route('/cam_register', methods=['GET'])
 def cam_register():
     '''Every cam FIRST calls this to register and get added to the "cams_list"'''
-    cam_res = add_cams_list(request.remote_addr)
+    cam_res = add_cams_list(request.remote_addr, request.args.get('state'))
     if cam_res == 'good addition': 
         return 'Good register'
     else: 
@@ -106,17 +108,15 @@ def cam_register():
 # -------------- View live feed --------------
 @app.route('/cam_feed')
 def cam_feed():
-    add_cams_list('1234')
+    # print()
+    # print(f'stream cam: {stream_cam}')
+    # print(f'cam selected: {cam_selected}')
+    # try: 
+    #     print(f'Frame len: {len(frame)}')
+    # except:
+    #     print(f'Frame len: {frame}')
 
-    print()
-    print(f'stream cam: {stream_cam}')
-    print(f'cam selected: {cam_selected}')
-    try: 
-        print(f'Frame len: {len(frame)}')
-    except:
-        print(f'Frame len: {frame}')
-
-    print()
+    # print()
 
     return render_template('cam_stream.html', 
                            cam_list_len = len(cams_list.keys()), 
@@ -138,13 +138,11 @@ def select_cam():
 
 # -------------- Adjust camera settings --------------
 @app.route('/cam_settings')
-def get_can_settings():
+def get_cam_settings():
     end_stream()
     # cams_list = [123, 2345]
     # Get current cam settings? 
     # Get cam stream
-    add_cams_list('1234')
-
     return render_template('cam_settings.html', 
                            cam_list_len = len(cams_list.keys()), 
                            cam_list = cams_list.keys(), 
@@ -192,14 +190,17 @@ def browse_videos():
     render_data = []
     if vid_filter is None or vid_filter == 'Nothing': # No filter specified, show all videos 
         render_data = list(zip(files_list, images_list, files_metadata))
-        print('We have no filter')
+        # print('We have no filter')
     elif vid_filter != 'Nothing' and vid_filter != None: # Filter by searched tag
         for i in range(len(files_metadata)):
             if vid_filter in files_metadata[i]:
                 render_data.append([files_list[i], images_list[i], files_metadata[i]])
-        print(f'We have filter: {vid_filter}')
-    print(render_data)
+        # print(f'We have filter: {vid_filter}')
+    # print(render_data)
     # print(f'render data len: {len(list(render_data))}')
+    if len(render_data) == 0: 
+        render_data = None
+
     
 
 
@@ -331,16 +332,15 @@ def end_stream():
     This means pages root, /videos and /cam_settings need this since they are the only navigation points to exit /cam_feed'''
     # Reset video stream
     global stream_cam
-
     # Tell the camera to end stream 
-    if stream_cam: 
+    if stream_cam != False: 
         cams_list[str(stream_cam)] = {'last_check_time': time.time(),
                                       'command': 'stream',
                                       'action': 'end'}
     stream_cam = False
     
     global cam_selected
-    cam_selected = False
+    cam_selected = False                   
 
     global frame
     frame = None
@@ -362,7 +362,8 @@ def update_cams_list():
     '''Remove inactive cameras from cams_list'''
 
     if not stream_cam: 
-        frame 
+        global frame
+        frame = None
 
     bad_cams = []
     if len(cams_list.keys()) == 0: 
@@ -383,18 +384,20 @@ def update_cams_list():
         print(f'>>> REMOVING camera {cam}')
         cams_list.pop(cam)
 
-def add_cams_list(cam_id): 
+def add_cams_list(cam_id, cam_state): 
     '''Still needs some fine tuning for the forget and re-addition cams'''
+    print(f'\nCam state: {cam_state} \n')
     try: 
-        if cam_id not in cams_list.keys(): 
+        if cam_state == 'starting': 
             cams_list[cam_id] = clean_cam_data()
             print('Added camera')
             return 'good addition'
         else: 
-            pass
+            print('Cam already running')
+            return 'can not add'
     except: 
         print('Could NOT add or update camera')
-        return 'can not added'
+        return 'can not add'
         
     
 def clean_cam_data(): 
@@ -407,10 +410,10 @@ def clean_cam_data():
 
 # Periodic check to wee if the cameras are still reporting. 
 cam_update_interval = 10
-scheduler = APScheduler()
-scheduler.init_app(app)
-scheduler.start()
-scheduler.add_job(id='cam_update-job', func=update_cams_list, trigger='interval', seconds=cam_update_interval)
+# scheduler = APScheduler()
+# scheduler.init_app(app)
+# scheduler.start()
+# scheduler.add_job(id='cam_update-job', func=update_cams_list, trigger='interval', seconds=cam_update_interval)
 
 
 # command to run the server 
@@ -418,5 +421,8 @@ scheduler.add_job(id='cam_update-job', func=update_cams_list, trigger='interval'
 # OR (to access it from other machines) 
 # python main.py
 
+# NB, when debug mode is enabled and changes are made to the server, Flask will auto restart and forget all cam states.
+# Avoid changes on deployed applications. Or disable debug mode like so: app.run(..., debug=False) 
+
 if __name__ == '__main__':   
-    app.run(host=ip_addr, port=5000, debug=False, use_reloader=False)
+    app.run(host=ip_addr, port=5000, debug=True)
