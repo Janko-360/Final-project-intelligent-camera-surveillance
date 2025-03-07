@@ -105,8 +105,8 @@ def start_recording(video_name):
     # Create new video file to save frames to
     global out
     out = cv2.VideoWriter(video_name, fourcc, 20.0, (width, height))
-    global start_frame
-    start_frame = frame
+    # global start_frame
+    # start_frame = frame
 
 def record_video(frame): 
     '''Writes the current frame to the OpenCV video writer'''
@@ -120,8 +120,8 @@ def stop_recording(activity):
     # print(f'Stopping recording: act now {round(act_now)}, mean act hist {round(np.mean(activity_hist))}')
     global recording
     recording = False
-    global end_frame
-    end_frame = frame 
+    # global end_frame
+    # end_frame = frame 
 
     out.release() 
     if prep_video(video_name, activity): 
@@ -129,7 +129,7 @@ def stop_recording(activity):
 
 # --------- Video helpers -----------
 def prep_video(video_name, activity): 
-    '''See if the video may be uploaded (if it check all criteria) and then add metadata to it.
+    '''See if the video may be uploaded (if it checks all criteria) and then add metadata to it.
     \nReturns True if the video is good to go and formatting is finished, otherwise False'''
     # Only upload the video if it is long enough
     # Min video limit prevents short dips from the detection algo
@@ -137,7 +137,7 @@ def prep_video(video_name, activity):
     # print(f'Video length: {vid_length}')
     # Check if the video is long enough 
     if vid_length > 0 and vid_length > min_video_limit: 
-        yolo_results = compare_to_target_objs()
+        yolo_results = compare_to_target_objs(video_name, vid_length)
         # Check if there are any objects of interest in the video
         if yolo_results != False: 
             metadata = yolo_results
@@ -260,12 +260,31 @@ def stream_frame(frame):
             connect_to_server()
 
 # ----------- Yolo object recognition --------- 
-def compare_to_target_objs(verbose=False): 
-    # Get objects in start and end frame  
+def get_frames_from_vid(video_name, vid_length): 
+    start_time = 0
+    end_time = 0
 
-    results = yolo.track(start_frame, conf=min_conf, stream=True, verbose=False)
+    if vid_length > 2: #video is long enough to take frames 1s from start and 1s from end
+        start_time = '00:00:01.000'
+        end_time = np.round(np.modf(vid_length - 1), 2)
+    else: # get video frames 0.5s from start and end
+        start_time = '00:00:00.500'
+        end_time = np.round(np.modf(vid_length - 0.5), 2)
+
+    frame1_cmd = f'ffmpeg -y -i "{video_name}" -ss {start_time} -vframes 1 -s 640x480 "./temp/start.png" -loglevel error'
+    subprocess.check_output(frame1_cmd, shell=True)
+    
+    frame2_cmd = f'ffmpeg -y -i "{video_name}" -ss 00:00:{int(end_time[1])}.{end_time[0]} -vframes 1 -s 640x480 "./temp/end.png" -loglevel error'
+    subprocess.check_output(frame2_cmd, shell=True)
+        
+
+def compare_to_target_objs(video_name, vid_length, verbose=False): 
+    # Get objects in start and end frame  
+    get_frames_from_vid(video_name, vid_length)
+
+    results = yolo.track("./temp/start.png", conf=min_conf, stream=True, verbose=False)
     objs1 = get_objects_dict(results)
-    results = yolo.track(end_frame, conf=min_conf, stream=True, verbose=False)
+    results = yolo.track("./temp/end.png", conf=min_conf, stream=True, verbose=False)
     objs2 = get_objects_dict(results)
 
     # Get common elements 
@@ -348,7 +367,7 @@ def ask_for_commands():
     if last_update_request+time_step < time.time():
         # print(f'\nLast check time: {last_update_request} \ncompared with {last_update_request+time_step} < {time.time()}')
         try:
-            res = requests.get(url + '/get_cam_commands')
+            res = requests.get(url + f'/get_cam_commands')
         except:
             print("Error: server is down...")
             global server_command
