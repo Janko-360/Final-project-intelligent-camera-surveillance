@@ -7,7 +7,7 @@ def get_metadata_all_files(files_list):
     for file_name in files_list: 
         metadata = get_1_file_metadata(f'.\\static\\media\\{file_name}')
         try: 
-            all_data.append(metadata['format']['tags']['comment'].split(', '))
+            all_data.append(eval(metadata['format']['tags']['comment']))
         except KeyError: 
             print('WARNING: We have an empty comment')
             all_data.append(['-'])
