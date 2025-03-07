@@ -98,7 +98,7 @@
         <div class="column content"> 
             <h2>Change camera settings</h2>
             {% if cam_list_len==0 %}
-                <p>Sorry no cameras connected to network</p>
+                <p style="color: red">No cameras connected to network</p>
             {% else %}  
                 <form action = "/update_camera" method = "post">  
                     <fieldset>
