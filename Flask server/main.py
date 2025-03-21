@@ -83,7 +83,6 @@ def listen():
     except: 
         ret_data = 'Cam not recognized'
         print('>>>>> ERROR cam address not found in cam dict')
-
         print(cams_list)
     return ret_data
 
@@ -138,7 +137,6 @@ def get_cam_settings():
 @app.route('/update_camera', methods=['POST'])
 def update_cams():
     if request.method == 'POST':
-        print(request.form)
         try: # a camera has to be selected
             data_list = {"command": "update_settings",
                         "min_t_thresh": request.form["min_vid_time"], 
@@ -176,7 +174,6 @@ def browse_videos():
     render_data = []
     if vid_filter is None or vid_filter == 'Nothing': # No filter specified, show all videos 
         render_data = list(zip(files_list, images_list, files_metadata))
-        # print('We have no filter')
     elif vid_filter != 'Nothing' and vid_filter != None: # Filter by searched tag
         for i in range(len(files_metadata)):
             if vid_filter in files_metadata[i]:
@@ -216,7 +213,6 @@ def search_videos():
 def remove_video():
     name = request.args.get('name')
     cmd = f'del "{name}"'
-    print(cmd)
     try: 
         subprocess.run(cmd, shell=True)
     except subprocess.CalledProcessError as err: 
@@ -238,17 +234,11 @@ def view():
 @app.route('/success', methods = ['POST'])   
 def success():   
     if request.method == 'POST':   
-        print("The request OBJ from GUI")
-        print(request)
-
         if 'file' not in request.files:
             flash('No file part')
             return 'Error: No file found (from GUI)'
-
         f = request.files['file'] 
-
         f.save(os.path.join('media', f.filename))
-
         return render_template("ack_page.html", name = f.filename)   
     
 
@@ -257,8 +247,6 @@ def success():
 @app.route(rule='/api', methods = ['GET', 'POST'])
 def handle_request():
     if request.method == "POST": 
-        print("The request OBJ")
-        print(request)
         if 'file' not in request.files:
             return 'Error: No file found (from API)'
         f = request.files['file'] 
@@ -268,7 +256,6 @@ def handle_request():
         else: 
             media_path = os.path.join(os.getcwd(), 'static\\media')
             save_path = os.path.join(media_path, f.filename)
-        print(f'Save path: {save_path}')
         f.save(save_path)
 
         return 'Good upload!'
@@ -297,8 +284,6 @@ def end_stream():
     global frame
     frame = None
 
-    # print(f'Reset the stream: \nstream_cam = {stream_cam} \ncams list = {cams_list} \n\n')
-
 def video_gen():
     '''A generator function that responds with the image frame packaged to display in browser \n
     Used in /video route'''
@@ -311,7 +296,7 @@ def video_gen():
 
 # ---- Camera information storage operations ----
 def update_cams_list():
-    '''Remove inactive cameras from cams_list'''
+    '''Remove inactive cameras from cams_list \nNeeds a rework to not throw working cameras'''
 
     if not stream_cam: 
         global frame
