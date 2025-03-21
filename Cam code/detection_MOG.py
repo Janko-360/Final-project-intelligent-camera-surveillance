@@ -10,7 +10,6 @@ import requests
 import subprocess
 
 
-
 # --------- Video and OpenCV init ---------
 video = cv2.VideoCapture(0)
 if not video.isOpened():
@@ -99,14 +98,11 @@ def process_activity():
 def start_recording(video_name): 
     '''Starts the OpenCV video writer'''
     # show activity & start recording 
-    # print(f'Starting recording: act now {round(act_now, 2)}, mean act hist {round(np.mean(activity_hist))}')
     global recording
     recording = time.time()
     # Create new video file to save frames to
     global out
     out = cv2.VideoWriter(video_name, fourcc, 20.0, (width, height))
-    # global start_frame
-    # start_frame = frame
 
 def record_video(frame): 
     '''Writes the current frame to the OpenCV video writer'''
@@ -117,7 +113,6 @@ def record_video(frame):
 def stop_recording(activity): 
     '''End the video writer and resets recording state'''
     # stop recording, activity slowed or stopped/finished
-    # print(f'Stopping recording: act now {round(act_now)}, mean act hist {round(np.mean(activity_hist))}')
     global recording
     recording = False
     # global end_frame
@@ -134,7 +129,6 @@ def prep_video(video_name, activity):
     # Only upload the video if it is long enough
     # Min video limit prevents short dips from the detection algo
     vid_length = get_length(video_name)
-    # print(f'Video length: {vid_length}')
     # Check if the video is long enough 
     if vid_length > 0 and vid_length > min_video_limit: 
         yolo_results = compare_to_target_objs(video_name, vid_length)
@@ -158,6 +152,7 @@ def prep_video(video_name, activity):
         return False
 
 def get_activity_category(activity): 
+    '''Returns the size of the object relative to the amount of activity. \nMore activity = larger object'''
     if activity < 0: 
         print('Error: get_activity_cat: negative activity')
         return 0
@@ -177,7 +172,6 @@ def upload_video(video_name):
     video_name = video_name.replace(".avi", ".mp4")
     r = 0
     with open(video_name, 'rb') as f: 
-        # print('Uploading...')
         upload_url = url + '/api'
         r = requests.post(upload_url, files={'file': f})
     if r.status_code == 200:
@@ -188,13 +182,9 @@ def upload_video(video_name):
 def write_vid_metadata(data, read_name):
     '''Write the collected metadata to the video as a comment'''
     metadata = str(data).replace('"', "'") # just to ensure formatting is right 
-    # print('Metadata')
-    # print(metadata)
     save_name = read_name.replace(".avi", ".mp4")
     cmd = f'''ffmpeg -y -i "{read_name}" -vcodec libx264 -metadata comment="{metadata}" "{save_name}" -loglevel error'''
     res = 0
-    # print('Command')
-    # print(cmd)
     try: 
         subprocess.check_output(cmd, shell=True)
         res = True
@@ -204,7 +194,6 @@ def write_vid_metadata(data, read_name):
 
 def rm_vid(video_name, reason):
     # Remove too short video and don't upload 
-    # print(f'Removing: {reason}')
     cmd = f'del "{video_name}"'
     try: 
         subprocess.run(cmd, shell=True)
@@ -217,7 +206,6 @@ def get_length(vid_name):
     cmd = f'ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "{vid_name}"'
     res = -1
     try: 
-        # print(cmd)
         res = subprocess.check_output(cmd, shell=True)
         res = str(res) 
         res = float(res[2:7])
@@ -225,23 +213,6 @@ def get_length(vid_name):
         print(f'Error getting video length: {res}')
         res = -1
     return res  
-
-def paint_contours(mask, frame): 
-    """Calculate the contours in the frame, paint rectangles on it, and return the frame with the rectangles that represent the detected objects."""
-    # Detect contours in the frame.
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    # Create a copy of the frame to draw bounding boxes around the detected cars.
-    frameCopy = frame.copy()
-    
-    # loop over each contour found in the frame.
-    for cnt in contours:
-        # Make sure the contour area is somewhat higher than some threshold to make sure its a car and not some noise.
-        if cv2.contourArea(cnt) > 400:
-            # Retrieve the bounding box coordinates from the contour.
-            x, y, width, height = cv2.boundingRect(cnt)
-            # Draw a bounding box around the car.
-            cv2.rectangle(frameCopy, (x , y), (x + width, y + height),(0, 0, 255), 2)
-    return frameCopy
 
 def handle_old_recording(): 
     '''Stop recording if old enough 
@@ -337,7 +308,6 @@ def get_objects_dict(results):
             else:  # Add the first values, no need for average conf or count increment 
                 detection_res[name] = {'count': 1, 
                                        'avg_conf': round(float(obj.conf[0]), 2)} 
-            # print(f'{classes_names[int(obj.cls[0])]}: conf: {obj.conf[0]}')
     return detection_res
 
 
@@ -349,7 +319,6 @@ def connect_to_server():
     while True:
         try:
             res = requests.get(url + '/cam_register')
-            # print(res.text)
             if res.text == 'Good register':
                 print(f'Registered at server')
                 break
@@ -365,7 +334,6 @@ def ask_for_commands():
     This function decides, based on the elapsed time, if it will actually ask for new commands'''
     global last_update_request
     if last_update_request+time_step < time.time():
-        # print(f'\nLast check time: {last_update_request} \ncompared with {last_update_request+time_step} < {time.time()}')
         try:
             res = requests.get(url + f'/get_cam_commands')
         except:
