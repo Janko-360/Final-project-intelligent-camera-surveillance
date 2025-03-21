@@ -1,7 +1,7 @@
 # Lots of help from https://flask.palletsprojects.com/en/stable/patterns/fileuploads/
 # API functionality: https://medium.com/@muhammadirfan92/creating-and-deploying-a-simple-flask-api-server-and-client-side-7d4f5690551 
-# File explorer from https://github.com/maksimKorzh/flask-tutorials/blob/master/simple-file-manager/app.py  
-# Video stream from https://stackoverflow.com/questions/72522805/stream-opencv-video-capture-to-flask-server
+# File explorer inspired from https://github.com/maksimKorzh/flask-tutorials/blob/master/simple-file-manager/app.py  
+# Video stream based on https://stackoverflow.com/questions/72522805/stream-opencv-video-capture-to-flask-server
 
 
 from flask import Flask, flash, request, redirect, url_for, render_template, Response, make_response, jsonify
@@ -16,7 +16,7 @@ import time
 cams_list = {}
 
 
-ip_addr = '192.168.235.106' # Use this address to have it hosted on local network NOT JUST ON LOCAL MACHINE 
+ip_addr = '192.168.235.108' # Use this address to have it hosted on local network NOT JUST ON LOCAL MACHINE 
 old_ip_addr = '192.168.2.100'
 
 app = Flask(__name__) 
@@ -51,11 +51,7 @@ def upload():
 
     # keep jpg data in global variable
     frame = request.data
-    # print(frame)
     stream_cam = request.remote_addr
-
-    # print('\nNew frame\n')
-
     return "OK"
 
 @app.route('/cam_video')
@@ -74,10 +70,8 @@ def listen():
     '''Periodically gets pinged by the cameras to ask for new commands or settings
     This is also used to update the sign of file of the cameras'''
     cam_id = request.remote_addr
-
     print(f'Cam check in:  {cam_id}')
     add_cams_list(cam_id, request.args.get('state'))
-
     try: 
         # NB str is needed to cheat the shadow copy of the dict data
         # otherwise the data reference will be lost with the overwrite here after 
@@ -91,12 +85,13 @@ def listen():
         print('>>>>> ERROR cam address not found in cam dict')
 
         print(cams_list)
-    # print(f'Get cam commands return value: {ret_data}')
     return ret_data
 
 
 @app.route('/cam_register', methods=['GET'])
 def cam_register():
+    # Attempted approach to maintain a active list of all camera addresses 
+    # Did not work as planned. 
     '''Every cam FIRST calls this to register and get added to the "cams_list"'''
     cam_res = add_cams_list(request.remote_addr, request.args.get('state'))
     if cam_res == 'good addition': 
@@ -108,16 +103,10 @@ def cam_register():
 # -------------- View live feed --------------
 @app.route('/cam_feed')
 def cam_feed():
-    # print()
-    # print(f'stream cam: {stream_cam}')
-    # print(f'cam selected: {cam_selected}')
-    # try: 
-    #     print(f'Frame len: {len(frame)}')
-    # except:
-    #     print(f'Frame len: {frame}')
-
-    # print()
-
+    # This route allows the selection of a camera 
+    # if a camera is selected, it will tell the page to auto refresh until the camera starts to send the video feed 
+    # thats the use of cam_selected 
+    # video_feed is the cam address or false for no feed. 
     return render_template('cam_stream.html', 
                            cam_list_len = len(cams_list.keys()), 
                            cam_list = cams_list.keys(), 
@@ -126,6 +115,7 @@ def cam_feed():
 
 @app.route('/select_cam', methods=['POST'])
 def select_cam():
+    # construct the start stream command for the selected camera 
     global cam_selected
     try: 
         cams_list[request.form["cam_id"]] = {'command': 'stream', 
@@ -140,14 +130,10 @@ def select_cam():
 @app.route('/cam_settings')
 def get_cam_settings():
     end_stream()
-    # cams_list = [123, 2345]
-    # Get current cam settings? 
-    # Get cam stream
     return render_template('cam_settings.html', 
                            cam_list_len = len(cams_list.keys()), 
                            cam_list = cams_list.keys(), 
                            alarm_objs = alarm_objs)
-
 
 @app.route('/update_camera', methods=['POST'])
 def update_cams():
@@ -173,14 +159,14 @@ def update_cams():
 @app.route('/videos')      
 def browse_videos():  
     end_stream()   
-    # Do not remove this, it somehow resets an error that can occur when it gets confused with directory location (CWD) 
+    # NB Do not remove this, it somehow resets an error that can occur when it gets confused with directory location (CWD) 
     print(f'Active dir: {os.getcwd()}' ) 
 
     # Delete old once and generate new once for the existing videos. 
     refresh_video_thumbnails()
 
     # Collect all video data 
-        # NB sequence of entries is important 
+    # NB sequence of entries is important 
     files_list = get_files('.\\static\\media')
     images_list = get_files('.\\static\\temp')
     files_metadata = get_metadata_all_files(files_list)
@@ -195,15 +181,9 @@ def browse_videos():
         for i in range(len(files_metadata)):
             if vid_filter in files_metadata[i]:
                 render_data.append([files_list[i], images_list[i], files_metadata[i]])
-        # print(f'We have filter: {vid_filter}')
-    # print(render_data)
-    # print(f'render data len: {len(list(render_data))}')
     if len(render_data) == 0: 
         render_data = None
-
     
-
-
     # Get the video to play, if something is selected
     vid_path = 'Nothing'
     arg = request.args.get('video_to_play')
@@ -217,7 +197,6 @@ def browse_videos():
         print('ERROR: uncaught argument condition')
         print(f"arg = {arg}, type {type(arg)}  in \\videos route")
 
- 
     return render_template("file_browser.html", 
                            current_working_directory=os.getcwd(),
                            render_data = render_data, 
@@ -248,34 +227,7 @@ def remove_video():
 
 
 
-# -------------- File browser navigation --------------
-# handle 'cd' command
-@app.route('/cd')
-def cd():
-    # run 'level up' command
-    os.chdir(request.args.get('path'))
-    
-    # redirect to file manager
-    return redirect('/videos')
-
-# handle 'make directory' command
-@app.route('/md')
-def md():
-    # create new folder
-    os.mkdir(request.args.get('folder'))
-    
-    # redirect to file manager
-    return redirect('/videos')
-
-# handle 'remove directory' command
-@app.route('/rm')
-def rm():
-    # remove certain directory
-    shutil.rmtree(os.getcwd() + '/' + request.args.get('dir'))
-    
-    # redirect to file manager
-    return redirect('/videos')
-    
+# -------------- File browser navigation --------------    
 # view text files
 @app.route('/view')
 def view():
@@ -409,6 +361,8 @@ def clean_cam_data():
 
 
 # Periodic check to wee if the cameras are still reporting. 
+# Disabled until there is time to rework the timing difference bug. 
+# This just means that old cam IP addresses are still available for selection in live feed or settings.  
 cam_update_interval = 10
 # scheduler = APScheduler()
 # scheduler.init_app(app)
@@ -421,7 +375,9 @@ cam_update_interval = 10
 # OR (to access it from other machines) 
 # python main.py
 
-# NB, when debug mode is enabled and changes are made to the server, Flask will auto restart and forget all cam states.
+# NB, set debug to false during production!!! 
+# when debug mode is enabled and changes are made to the server, Flask will auto restart and forget all cam states.
+# An there are security issues with debug=true in production. 
 # Avoid changes on deployed applications. Or disable debug mode like so: app.run(..., debug=False) 
 
 if __name__ == '__main__':   
