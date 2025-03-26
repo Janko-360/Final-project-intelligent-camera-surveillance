@@ -8,16 +8,15 @@ from flask import Flask, flash, request, redirect, url_for, render_template, Res
 import os 
 import shutil
 from static.helpers.video_data_helpers import *
-from flask_apscheduler import APScheduler
+# from flask_apscheduler import APScheduler
+# Might later be used to update the cameras 
 import time
 
 # a dictionary of cameras. Key = IP addresses of cameras, Value = Dict of cam commands or settings 
 # Reset to default data structure per cam with the clean_cam_data() function 
 cams_list = {}
 
-
-ip_addr = '192.168.235.108' # Use this address to have it hosted on local network NOT JUST ON LOCAL MACHINE 
-old_ip_addr = '192.168.2.100'
+ip_addr = '192.168.235.103' # Use this address to have it hosted on local network NOT JUST ON LOCAL MACHINE 
 
 app = Flask(__name__) 
 
@@ -36,11 +35,6 @@ alarm_objs = ['person', 'car', 'motorcycle', 'truck', 'bus', 'ball', 'bird']
 def main():   
     end_stream()
     return render_template("index.html")   
-
-
-@app.route('/try')
-def try_run():
-    return render_template('try.html')
 
 @app.route('/stream', methods=['PUT'])
 def upload():
@@ -86,7 +80,6 @@ def listen():
         print(cams_list)
     return ret_data
 
-
 @app.route('/cam_register', methods=['GET'])
 def cam_register():
     # Attempted approach to maintain a active list of all camera addresses 
@@ -97,8 +90,12 @@ def cam_register():
         return 'Good register'
     else: 
         return 'Cam not registered'
-
     
+@app.route('/try')
+def try_run():
+    return render_template('try.html')
+
+
 # -------------- View live feed --------------
 @app.route('/cam_feed')
 def cam_feed():
@@ -323,14 +320,14 @@ def update_cams_list():
 
 def add_cams_list(cam_id, cam_state): 
     '''Still needs some fine tuning for the forget and re-addition cams'''
-    print(f'\nCam state: {cam_state} \n')
+    # print(f'\nCam state: {cam_state} \n')
     try: 
         if cam_state == 'starting': 
             cams_list[cam_id] = clean_cam_data()
             print('Added camera')
             return 'good addition'
         else: 
-            print('Cam already running')
+            # print('Cam already running')
             return 'can not add'
     except: 
         print('Could NOT add or update camera')
@@ -366,4 +363,4 @@ cam_update_interval = 10
 # Avoid changes on deployed applications. Or disable debug mode like so: app.run(..., debug=False) 
 
 if __name__ == '__main__':   
-    app.run(host=ip_addr, port=5000, debug=True)
+    app.run(host=ip_addr, port=5000, debug=False)
