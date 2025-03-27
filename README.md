@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/761f6585-c335-4587-841d-d9e16094a8e7)# Final-project-intelligent-camera-surveillance
+# Final-project-intelligent-camera-surveillance
 Final project for my BSc Computer Science degree. An intelligent camera video surveillance system.    
   
 **Disclaimer**: NO AI of any kind was used during any stage of this project. This is all my work and adapted material is referenced where relevant. 
