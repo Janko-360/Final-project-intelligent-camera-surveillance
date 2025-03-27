@@ -1,11 +1,15 @@
-
 # Code running on the Raspberry Pi 4B
 # It includes the communications with the server
 # Accesses the camera and performs all operations needed to detect movement, record it and see if it can be send to the server.  
 
 # Note: 
 # - leave the print statements in to see what the program does. 
-# - adjust the hard codded local server IP address to yours.
+# - adjust the hard codded local server IP address to yours (url = <ip address>:<port>).
+
+# References: 
+# Most material is based on the documentation from each technology 
+# The HTTP transfer is inspired by a quick GeeksForGeeks example 
+# Video stream based on https://stackoverflow.com/questions/72522805/stream-opencv-video-capture-to-flask-server
 
 import cv2
 from ultralytics import YOLO
@@ -226,6 +230,7 @@ def get_activity_category(activity):
 
 def upload_video(video_name):
     '''Http upload to the local server'''
+    # based on example from GeeksForGeeks 
     video_name = video_name.replace(".avi", ".mp4")
     r = 0
     print('Starting upload')

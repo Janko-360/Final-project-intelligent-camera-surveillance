@@ -1,6 +1,13 @@
-# Lots of help from https://flask.palletsprojects.com/en/stable/patterns/fileuploads/
-# API functionality: https://medium.com/@muhammadirfan92/creating-and-deploying-a-simple-flask-api-server-and-client-side-7d4f5690551 
-# File explorer inspired from https://github.com/maksimKorzh/flask-tutorials/blob/master/simple-file-manager/app.py  
+
+# The main file to be executed to host the Flask server. 
+# It will process the requests from the camera and respond. 
+
+# Note, perhaps update the ip_addr to the local IP address of your host machine. 
+
+# References: 
+# Flask server setup help from: https://flask.palletsprojects.com/en/stable/patterns/fileuploads/
+# API functionality inspired by: https://medium.com/@muhammadirfan92/creating-and-deploying-a-simple-flask-api-server-and-client-side-7d4f5690551 
+# File explorer based on: https://github.com/maksimKorzh/flask-tutorials/blob/master/simple-file-manager/app.py  
 # Video stream based on https://stackoverflow.com/questions/72522805/stream-opencv-video-capture-to-flask-server
 
 
