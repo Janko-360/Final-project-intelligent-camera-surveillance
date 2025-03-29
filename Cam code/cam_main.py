@@ -199,7 +199,6 @@ def prep_video(video_name, activity):
             metadata.append(time.strftime('%H-%M-%S %d-%m-%Y', time.localtime()))
             # Check if metadata is successfully written to the video
             if write_vid_metadata(metadata, video_name):
-                rm_vid(video_name, 'no longer needed :) ')
                 return True
             else:
                 print('Bad metadata write')
