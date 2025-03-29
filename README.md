@@ -1,7 +1,7 @@
 # Final-project-intelligent-camera-surveillance
 Final project for my BSc Computer Science degree. An intelligent camera video surveillance system.    
   
-**Disclaimer**: NO AI of any kind was used during any stage of this project. This is all my work and adapted material is referenced where relevant. 
+**Disclaimer**: NO AI of any kind was used during any stage of this project.
   
 ## Goal and aims, project brief 
 Goal:  
